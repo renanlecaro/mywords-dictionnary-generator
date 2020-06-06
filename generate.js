@@ -206,4 +206,4 @@ function wordsStats(list){
 }
 wordsStats(asArray)
 
-fs.writeFileSync('result.json', JSON.stringify(asArray))
+fs.writeFileSync('dictionnary.json', JSON.stringify(asArray))
