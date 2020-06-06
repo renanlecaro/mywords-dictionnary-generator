@@ -1,0 +1,22 @@
+{
+  "name": "russian-dictionary",
+  "version": "1.0.0",
+  "description": "These CSV files contain the dictionary data from the dictionary website https://en.openrussian.org. The origin are various sources including Wiktionary and lots of corrections and additions by users.",
+  "main": "index.js",
+  "scripts": {
+    "start": "nodemon generate.js -w generate.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Badestrand/russian-dictionary.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Badestrand/russian-dictionary/issues"
+  },
+  "homepage": "https://github.com/Badestrand/russian-dictionary#readme",
+  "dependencies": {
+    "nodemon": "^2.0.4"
+  }
+}
