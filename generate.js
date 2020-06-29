@@ -28,19 +28,22 @@ function parseNouns() {
     let from=limitTranslationSize(translations_en)
 
     if(indeclinable) from+=' (indeclinable)'
-    if(sg_only) from+=' (always singular)'
-    if(pl_only) from+=' (always plural)'
+    if(sg_only) from+=' (sg)'
+    if(pl_only) from+=' (pl)'
 
     const lastLetter= bare[bare.length];
     if(lastLetter==='ь') from+= '('+gender+')'
 
-    finalDict.push({from, to:bare})
 
-    // if(pl_nom){
-    //   const fromPlural = limitTranslationSize(translations_en) + ' (plural)'
-    //
-    //   finalDict.push({from:fromPlural, to:unaccent(pl_nom)})
-    // }
+    if(pl_nom){
+
+      const fromPlural =  + ' (plural)'
+
+      finalDict.push({from:from+' (sg - pl)', to:'*'+bare+'* / *'+unaccent(pl_nom)+'*'})
+    }else{
+
+      finalDict.push({from, to:bare})
+    }
   })
   return finalDict
 }
@@ -53,7 +56,7 @@ function unaccent(str){
 const sizeLimit=50
 function limitTranslationSize(str){
   if(str.length<sizeLimit) return str
-  const result=''
+
   const meanings=str.split(/; /gi).map(s=>s.split(/, /))
   const variants=[4,3,2,1]
     .map(maxWords=>{
@@ -68,11 +71,23 @@ function limitTranslationSize(str){
 function parseVerb() {
 
   return readCSV('./openrussian/verbs.csv')
-    .map(({bare,translations_en,aspect,partner,
-            presfut_sg1,presfut_sg2,presfut_sg3,presfut_pl1,presfut_pl2,presfut_pl3})=>{
-      return {
-        from:limitTranslationSize(translations_en)+' ('+aspect+')',
-        to:bare
+    .map(({bare,translations_en,aspect,partner})=>{
+      if(!bare) return
+
+      if(aspect && partner){
+        partner=partner.split(';')[0]
+        const imp = unaccent(aspect=='imperfective' ? bare : partner)
+        const perf = unaccent(aspect!=='imperfective' ? bare : partner)
+
+        return {
+          from:limitTranslationSize(translations_en)+ ' (нсв - св)',
+          to: `*${imp}* - *${perf}*`
+        }
+      }else{
+        // return {
+        //   from:limitTranslationSize(translations_en),
+        //   to:bare
+        // }
       }
     })
 
@@ -103,9 +118,9 @@ function isRussian(txt){
 
 function cleanList(list){
   const result=[]
-  list.forEach(({from, to})=> {
-    from=from.trim().toLowerCase()
-    to=to.trim().toLowerCase().replace(/‐/gi,'-')
+  list.filter(i=>i).forEach(({from, to})=> {
+    from=from.trim().toLowerCase().replace(/ *\(\) */gi,' ')
+    to=to.trim().toLowerCase().replace(/‐/gi,'-').replace(/ *\(\) */gi,' ')
     if(!from||!to) return
     result.push({from,to})
   })
@@ -163,27 +178,29 @@ function normaliseTo(list) {
   return result
 }
 
-function addToFinalDict(list){
+function addToFinalDict(list, normalize=true){
   list=cleanList(list)
   // Normalize twice to clean starred words
-  list=normaliseTo(list)
-  list=normaliseTo(list)
+  if(normalize){
+    list=normaliseTo(list)
+    list=normaliseTo(list)
+  }
 
   list.forEach(({from,to})=>{
+
     if(!final[to]){
       final[to]=from
     }
   })
 }
 
-addToFinalDict(parseAdj())
-addToFinalDict(parseNouns())
-addToFinalDict(parseVerb())
-
-
 function prebaked(filename){
   return JSON.parse(fs.readFileSync(filename).toString())
 }
+
+addToFinalDict(parseAdj())
+addToFinalDict(parseNouns())
+addToFinalDict(parseVerb(), false)
 addToFinalDict(prebaked('mywords/common.json'))
 addToFinalDict(prebaked('mywords/alltypes.json'))
 addToFinalDict(prebaked('mywords/big.json'))
@@ -205,5 +222,5 @@ function wordsStats(list){
   console.log(letterStats)
 }
 wordsStats(asArray)
-
+console.table(asArray.slice(0,50))
 fs.writeFileSync('dictionnary.json', JSON.stringify(asArray))
